@@ -86,7 +86,7 @@ function createDayCard(daily, hourly, current, index, days) {
   const date = new Date(daily.time[index]);
   const dayName = date.toLocaleDateString("en-US", { weekday: "short" });
   const weatherCode = daily.weathercode[index];
-  const iconSrc = `icons/${weatherCode}.png`;
+  const iconSrc = `${weatherCode}.png`;
 
   const tempHigh = Math.round(daily.temperature_2m_max[index]);
   const tempLow = Math.round(daily.temperature_2m_min[index]);
@@ -129,7 +129,7 @@ function createDayCard(daily, hourly, current, index, days) {
         const hour = new Date(time).toLocaleTimeString([], { hour: "numeric" });
         const temp = Math.round(hourly.temperature_2m[startIndex + i]);
         const wcode = hourly.weathercode[startIndex + i];
-        const icon = `icons/${wcode}.png`;
+        const icon = `${wcode}.png`;
         hourlyContainer.innerHTML += `
           <div class="hour">
             <p>${hour}</p>
