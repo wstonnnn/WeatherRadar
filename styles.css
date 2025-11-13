@@ -229,10 +229,6 @@ footer {
 
   .forecast.seven-day .row-top,
   .forecast.seven-day .row-bottom {
-    flex-direction: column;
-    gap: 15px;
-    width: 100%;
-    max-width: 320px;
-    align-items: center;
+    display: contents;
   }
 }
