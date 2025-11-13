@@ -202,13 +202,6 @@ footer {
 
 /* Mobile Styling */
 @media (max-width: 600px) {
-  .day-toggles {
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 20px;
-    margin-bottom: 20px;
-  }
-
   .day-card {
     width: 90%;
     max-width: 320px;
