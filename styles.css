@@ -144,8 +144,7 @@ button:hover {
 }
 
 @media (max-width: 600px) {
-  .forecast.seven-day .row-top,
-  .forecast.seven-day .row-bottom {
+  .forecast.seven-day {
     flex-direction: column;
     gap: 15px;
   }
