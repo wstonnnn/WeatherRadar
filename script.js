@@ -1,39 +1,53 @@
-let currentCity = "Detroit";
+let currentCity = {
+  name: "Detroit",
+  state: "Michigan",
+  lat: null,
+  lon: null
+};
 
-// Get City Coordinates
-async function getCityCoords(city) {
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`;
+// Fetch City Coords
+async function getCityCoords(cityObj) {
+  if (cityObj.lat && cityObj.lon) return { lat: cityObj.lat, lon: cityObj.lon };
+
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityObj.name)}&count=5&language=en&format=json`;
   const response = await fetch(url);
   const data = await response.json();
+
   if (!data.results || data.results.length === 0) {
     alert("City not found. Please try again.");
     return null;
   }
-  const { latitude, longitude } = data.results[0];
-  return { lat: latitude, lon: longitude };
+
+  // Match City and State
+  let match = data.results.find(c => {
+    const stateText = c.admin1 || "";
+    return cityObj.state.toLowerCase() === stateText.toLowerCase() && cityObj.name.toLowerCase() === c.name.toLowerCase();
+  });
+
+  if (!match) match = data.results[0];
+
+  return { lat: match.latitude, lon: match.longitude };
 }
 
 // Fetch Weather Data
-async function getWeatherData(city) {
-  const coords = await getCityCoords(city);
+async function getWeatherData(cityObj) {
+  const coords = await getCityCoords(cityObj);
   if (!coords) return null;
 
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current_weather=true&hourly=temperature_2m,weathercode&daily=temperature_2m_max,temperature_2m_min,weathercode,sunrise,sunset,windspeed_10m_max,relative_humidity_2m_max&temperature_unit=fahrenheit&windspeed_unit=mph&timezone=auto`;
-
-  const response = await fetch(url);
-  const data = await response.json();
-
-  // Display City Name
-  const cityNameEl = document.getElementById("city-name");
-  if (cityNameEl) {
-    cityNameEl.textContent = city.charAt(0).toUpperCase() + city.slice(1);
-  }
+  const res = await fetch(url);
+  const data = await res.json();
 
   data.coords = coords;
+
+  // Update City Name
+  document.getElementById("city-name").textContent = 
+      `${cityObj.name}${cityObj.state ? ', ' + cityObj.state : ''}`;
+
   return data;
 }
 
-// Weather Code Descriptions
+// Weather codes
 const weatherMap = {
   0: "Clear sky",
   1: "Mainly clear",
@@ -58,7 +72,7 @@ const weatherMap = {
   99: "Thunderstorm (heavy hail)"
 };
 
-// Format 12-Hour AM/PM
+// Format 12-Hour Time
 function formatTimeTo12Hour(isoString) {
   const date = new Date(isoString);
   return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
@@ -72,7 +86,7 @@ function createDayCard(daily, hourly, current, index, days) {
   const date = new Date(daily.time[index]);
   const dayName = date.toLocaleDateString("en-US", { weekday: "short" });
   const weatherCode = daily.weathercode[index];
-  const iconSrc = `${weatherCode}.png`;
+  const iconSrc = `icons/${weatherCode}.png`;
 
   const tempHigh = Math.round(daily.temperature_2m_max[index]);
   const tempLow = Math.round(daily.temperature_2m_min[index]);
@@ -105,7 +119,6 @@ function createDayCard(daily, hourly, current, index, days) {
       <div class="hourly-forecast"></div>
     `;
 
-    // Hourly Forecast
     const hourlyContainer = card.querySelector(".hourly-forecast");
     if (hourly && hourly.time) {
       const now = new Date();
@@ -116,7 +129,7 @@ function createDayCard(daily, hourly, current, index, days) {
         const hour = new Date(time).toLocaleTimeString([], { hour: "numeric" });
         const temp = Math.round(hourly.temperature_2m[startIndex + i]);
         const wcode = hourly.weathercode[startIndex + i];
-        const icon = `${wcode}.png`;
+        const icon = `icons/${wcode}.png`;
         hourlyContainer.innerHTML += `
           <div class="hour">
             <p>${hour}</p>
@@ -178,20 +191,84 @@ function renderForecast(data, days) {
 // Show Forecast
 async function showForecast(days) {
   const data = await getWeatherData(currentCity);
-  if (data) {
-    renderForecast(data, days);
-  }
+  if (data) renderForecast(data, days);
 }
 
-// Search
-function searchCity() {
-  const input = document.getElementById("locationInput").value.trim();
-  if (input) {
-    currentCity = input;
-    showForecast(3);
-  }
+// Dropdown Menu
+const input = document.getElementById("locationInput");
+const suggestionsEl = document.getElementById("suggestions");
+
+async function fetchCitySuggestions(query) {
+  if (!query) return [];
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return data.results || [];
 }
 
-// Default Load
+input.addEventListener("input", async () => {
+  const query = input.value.trim();
+  if (!query) {
+    suggestionsEl.style.display = "none";
+    return;
+  }
+
+  const cities = await fetchCitySuggestions(query);
+  if (!cities.length) {
+    suggestionsEl.style.display = "none";
+    return;
+  }
+
+  suggestionsEl.innerHTML = "";
+
+  cities.forEach(city => {
+    const stateText = city.admin1 ? `, ${city.admin1}` : "";
+    const div = document.createElement("div");
+    div.textContent = `${city.name}${stateText}, ${city.country}`;
+
+    div.addEventListener("click", () => {
+      input.value = `${city.name}${stateText}, ${city.country}`;
+      
+      input.dataset.selectedCityName = city.name;
+      input.dataset.selectedState = city.admin1 || "";
+      input.dataset.selectedLat = city.latitude;
+      input.dataset.selectedLon = city.longitude;
+      suggestionsEl.style.display = "none";
+    });
+
+    suggestionsEl.appendChild(div);
+  });
+
+  suggestionsEl.style.display = "block";
+});
+
+// Search button
+async function searchCity() {
+  const inputValue = input.value.trim();
+  if (!inputValue) return;
+
+  const name = input.dataset.selectedCityName || inputValue;
+  const state = input.dataset.selectedState || "";
+  const lat = input.dataset.selectedLat ? parseFloat(input.dataset.selectedLat) : null;
+  const lon = input.dataset.selectedLon ? parseFloat(input.dataset.selectedLon) : null;
+
+  currentCity = { name, state, lat, lon };
+  await showForecast(3);
+
+  input.value = "";
+  input.dataset.selectedCityName = "";
+  input.dataset.selectedState = "";
+  input.dataset.selectedLat = "";
+  input.dataset.selectedLon = "";
+  suggestionsEl.style.display = "none";
+}
+
+// Day Toggles
+document.querySelectorAll(".day-toggles button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    showForecast(parseInt(btn.textContent));
+  });
+});
+
+// Default load
 showForecast(3);
-

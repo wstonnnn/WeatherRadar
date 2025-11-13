@@ -9,9 +9,10 @@
     <body>
         <h1>WeatherRadar</h1>
 
-        <div class="search-bar">
+        <div class="search-bar" style="position: relative;">
             <input type="text" id="locationInput" placeholder="Please Enter a City">
             <button onclick="searchCity()">Search</button>
+            <div id="suggestions" class="dropdown"></div>
         </div>
 
         <div class="day-toggles">

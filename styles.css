@@ -60,6 +60,25 @@ button:hover {
   background: #005fcc;
 }
 
+/* Dropdown Search */
+.dropdown {
+  position: absolute;
+  background: #222;
+  color: #fff;
+  border-radius: 6px;
+  max-height: 200px;
+  display: none;
+}
+
+.dropdown div {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.dropdown div:hover {
+  background: #444;
+}
+
 /* Forecast Layout */
 .forecast {
   display: flex;
