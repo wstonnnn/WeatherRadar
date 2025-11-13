@@ -116,13 +116,6 @@ button:hover {
   flex-wrap: wrap;
 }
 
-@media (max-width: 600px) {
-  .forecast.three-day {
-    flex-direction: column;
-    gap: 15px;
-  }
-}
-
 /* 7-Day Layout */
 .forecast.seven-day {
   display: flex;
@@ -141,13 +134,6 @@ button:hover {
   gap: 25px;
   width: 100%;
   max-width: 950px;
-}
-
-@media (max-width: 600px) {
-  .forecast.seven-day {
-    flex-direction: column;
-    gap: 15px;
-  }
 }
 
 /* Hourly Forecast */
@@ -212,4 +198,38 @@ footer {
   padding: 15px;
   font-size: 1rem;
   color: #bbb;
+}
+
+/* Mobile Styling */
+@media (max-width: 600px) {
+  .day-toggles {
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+  }
+
+  .day-card {
+    width: 90%;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  .hourly-forecast {
+    gap: 8px;
+    padding: 8px 0;
+  }
+
+  .forecast.seven-day {
+    gap: 20px;
+  }
+
+  .forecast.seven-day .row-top,
+  .forecast.seven-day .row-bottom {
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    max-width: 320px;
+    align-items: center;
+  }
 }
