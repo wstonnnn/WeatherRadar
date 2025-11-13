@@ -116,6 +116,13 @@ button:hover {
   flex-wrap: wrap;
 }
 
+@media (max-width: 600px) {
+  .forecast.three-day {
+    flex-direction: column;
+    gap: 15px;
+  }
+}
+
 /* 7-Day Layout */
 .forecast.seven-day {
   display: flex;
@@ -134,6 +141,14 @@ button:hover {
   gap: 25px;
   width: 100%;
   max-width: 950px;
+}
+
+@media (max-width: 600px) {
+  .forecast.seven-day .row-top,
+  .forecast.seven-day .row-bottom {
+    flex-direction: column;
+    gap: 15px;
+  }
 }
 
 /* Hourly Forecast */

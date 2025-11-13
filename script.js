@@ -1,6 +1,6 @@
 let currentCity = "Detroit";
 
-// Get city coordinates
+// Get City Coordinates
 async function getCityCoords(city) {
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`;
   const response = await fetch(url);
@@ -13,7 +13,7 @@ async function getCityCoords(city) {
   return { lat: latitude, lon: longitude };
 }
 
-// Fetch weather data
+// Fetch Weather Data
 async function getWeatherData(city) {
   const coords = await getCityCoords(city);
   if (!coords) return null;
@@ -23,17 +23,17 @@ async function getWeatherData(city) {
   const response = await fetch(url);
   const data = await response.json();
 
-  // Display city name
+  // Display City Name
   const cityNameEl = document.getElementById("city-name");
   if (cityNameEl) {
     cityNameEl.textContent = city.charAt(0).toUpperCase() + city.slice(1);
   }
 
-  data.coords = coords; // save coords if needed
+  data.coords = coords;
   return data;
 }
 
-// Weather code descriptions
+// Weather Code Descriptions
 const weatherMap = {
   0: "Clear sky",
   1: "Mainly clear",
@@ -58,13 +58,13 @@ const weatherMap = {
   99: "Thunderstorm (heavy hail)"
 };
 
-// Format ISO date/time to 12-hour AM/PM
+// Format 12-Hour AM/PM
 function formatTimeTo12Hour(isoString) {
   const date = new Date(isoString);
   return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
 }
 
-// Build day card
+// Build Day Card
 function createDayCard(daily, hourly, current, index, days) {
   const card = document.createElement("div");
   card.classList.add("day-card");
@@ -85,7 +85,7 @@ function createDayCard(daily, hourly, current, index, days) {
     <p class="temp"><strong>H:</strong> ${tempHigh}° | <strong>L:</strong> ${tempLow}°</p>
   `;
 
-  // --- 1 Day (detailed) ---
+  // 1 Day Card (detailed)
   if (days === 1) {
     card.classList.add("detailed");
 
@@ -105,7 +105,7 @@ function createDayCard(daily, hourly, current, index, days) {
       <div class="hourly-forecast"></div>
     `;
 
-    // --- HOURLY FORECAST ---
+    // Hourly Forecast
     const hourlyContainer = card.querySelector(".hourly-forecast");
     if (hourly && hourly.time) {
       const now = new Date();
@@ -128,7 +128,7 @@ function createDayCard(daily, hourly, current, index, days) {
     }
   }
 
-  // --- 3 Day ---
+  // 3 Day Card
   if (days === 3) {
     const wind = daily.windspeed_10m_max[index].toFixed(1);
     const humidity = daily.relative_humidity_2m_max[index];
@@ -143,7 +143,7 @@ function createDayCard(daily, hourly, current, index, days) {
   return card;
 }
 
-// Render forecast
+// Render Forecast
 function renderForecast(data, days) {
   const forecastEl = document.getElementById("forecast");
   forecastEl.innerHTML = "";
@@ -175,7 +175,7 @@ function renderForecast(data, days) {
   }
 }
 
-// Show forecast
+// Show Forecast
 async function showForecast(days) {
   const data = await getWeatherData(currentCity);
   if (data) {
@@ -192,6 +192,6 @@ function searchCity() {
   }
 }
 
-// Default load
+// Default Load
 showForecast(3);
 
