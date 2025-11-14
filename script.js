@@ -5,49 +5,74 @@ let currentCity = {
   lon: null
 };
 
-// Fetch City Coords
+// ===== GET CITY COORDS =====
 async function getCityCoords(cityObj) {
-  if (cityObj.lat && cityObj.lon) return { lat: cityObj.lat, lon: cityObj.lon };
+  if (cityObj.lat && cityObj.lon) {
+    return {
+      lat: cityObj.lat,
+      lon: cityObj.lon,
+      name: cityObj.name,
+      state: cityObj.state,
+      country: cityObj.country
+    };
+  }
 
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityObj.name)}&count=5&language=en&format=json`;
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+    cityObj.name
+  )}&count=10&language=en&format=json`;
+
   const response = await fetch(url);
   const data = await response.json();
 
-  if (!data.results || data.results.length === 0) {
-    alert("City not found. Please try again.");
-    return null;
-  }
+  if (!data.results || data.results.length === 0) return null;
 
-  // Match City and State
-  let match = data.results.find(c => {
-    const stateText = c.admin1 || "";
-    return cityObj.state.toLowerCase() === stateText.toLowerCase() && cityObj.name.toLowerCase() === c.name.toLowerCase();
+  // Try matching name + state
+  let match = data.results.find((res) => {
+    const admin = res.admin1 ? res.admin1.toLowerCase() : "";
+    return (
+      res.name.toLowerCase() === cityObj.name.toLowerCase() &&
+      admin === cityObj.state.toLowerCase()
+    );
   });
 
   if (!match) match = data.results[0];
 
-  return { lat: match.latitude, lon: match.longitude };
+  return {
+    lat: match.latitude,
+    lon: match.longitude,
+    name: match.name,
+    state: match.admin1 || "",
+    country: match.country || "",
+    admin2: match.admin2 || ""
+  };
 }
 
-// Fetch Weather Data
+// ===== FETCH WEATHER =====
 async function getWeatherData(cityObj) {
   const coords = await getCityCoords(cityObj);
-  if (!coords) return null;
+  if (!coords) {
+    alert("City not found – try another.");
+    return null;
+  }
 
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current_weather=true&hourly=temperature_2m,weathercode&daily=temperature_2m_max,temperature_2m_min,weathercode,sunrise,sunset,windspeed_10m_max,relative_humidity_2m_max&temperature_unit=fahrenheit&windspeed_unit=mph&timezone=auto`;
+
   const res = await fetch(url);
   const data = await res.json();
-
   data.coords = coords;
 
-  // Update City Name
-  document.getElementById("city-name").textContent = 
-      `${cityObj.name}${cityObj.state ? ', ' + cityObj.state : ''}`;
+  // === ALWAYS SHOW CITY, STATE, COUNTRY ===
+  let name = coords.name || "";
+  let state = coords.state || coords.admin2 || "";
+  let country = coords.country || "";
+
+  document.getElementById("city-name").textContent =
+  country ? `${name}, ${state}, ${country}` : `${name}, ${state}`;
 
   return data;
 }
 
-// Weather codes
+// ===== WEATHER CODE DESCRIPTIONS =====
 const weatherMap = {
   0: "Clear sky",
   1: "Mainly clear",
@@ -72,19 +97,24 @@ const weatherMap = {
   99: "Thunderstorm (heavy hail)"
 };
 
-// Format 12-Hour Time
+// ===== TIME FORMAT =====
 function formatTimeTo12Hour(isoString) {
   const date = new Date(isoString);
-  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+  return date.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
 }
 
-// Build Day Card
+// ===== CREATE DAY CARD =====
 function createDayCard(daily, hourly, current, index, days) {
   const card = document.createElement("div");
   card.classList.add("day-card");
 
   const date = new Date(daily.time[index]);
   const dayName = date.toLocaleDateString("en-US", { weekday: "short" });
+
   const weatherCode = daily.weathercode[index];
   const iconSrc = `${weatherCode}.png`;
 
@@ -93,70 +123,66 @@ function createDayCard(daily, hourly, current, index, days) {
   const weatherDesc = weatherMap[weatherCode] || "Unknown";
 
   card.innerHTML = `
-    <h3>${dayName}</h3>
-    <img src="${iconSrc}" alt="Weather icon" class="weather-icon">
-    <p>${weatherDesc}</p>
-    <p class="temp"><strong>H:</strong> ${tempHigh}° | <strong>L:</strong> ${tempLow}°</p>
-  `;
+      <h3>${dayName}</h3>
+      <img src="${iconSrc}" class="weather-icon" alt="Weather Icon">
+      <p>${weatherDesc}</p>
+      <p class="temp"><strong>H:</strong> ${tempHigh}° | <strong>L:</strong> ${tempLow}°</p>
+    `;
 
-  // 1 Day Card (detailed)
   if (days === 1) {
     card.classList.add("detailed");
-
     const sunrise = formatTimeTo12Hour(daily.sunrise[index]);
     const sunset = formatTimeTo12Hour(daily.sunset[index]);
     const wind = daily.windspeed_10m_max[index].toFixed(1);
     const humidity = daily.relative_humidity_2m_max[index];
 
     card.innerHTML += `
-      <div class="section">
-        <p><strong>Sunrise:</strong> ${sunrise}</p>
-        <p><strong>Sunset:</strong> ${sunset}</p>
-        <p><strong>Wind:</strong> ${wind} mph</p>
-        <p><strong>Humidity:</strong> ${humidity}%</p>
-      </div>
-      <h4>Hourly Forecast</h4>
-      <div class="hourly-forecast"></div>
-    `;
+        <div class="section">
+          <p><strong>Sunrise:</strong> ${sunrise}</p>
+          <p><strong>Sunset:</strong> ${sunset}</p>
+          <p><strong>Wind:</strong> ${wind} mph</p>
+          <p><strong>Humidity:</strong> ${humidity}%</p>
+        </div>
+        <h4>Hourly Forecast</h4>
+        <div class="hourly-forecast"></div>
+      `;
 
     const hourlyContainer = card.querySelector(".hourly-forecast");
-    if (hourly && hourly.time) {
-      const now = new Date();
-      const startIndex = hourly.time.findIndex(t => new Date(t) > now);
-      const next12 = hourly.time.slice(startIndex, startIndex + 12);
+    const now = new Date();
+    const start = hourly.time.findIndex((t) => new Date(t) > now);
+    const next12 = hourly.time.slice(start, start + 12);
 
-      next12.forEach((time, i) => {
-        const hour = new Date(time).toLocaleTimeString([], { hour: "numeric" });
-        const temp = Math.round(hourly.temperature_2m[startIndex + i]);
-        const wcode = hourly.weathercode[startIndex + i];
-        const icon = `${wcode}.png`;
-        hourlyContainer.innerHTML += `
+    next12.forEach((time, i) => {
+      const hour = new Date(time).toLocaleTimeString([], { hour: "numeric" });
+      const temp = Math.round(hourly.temperature_2m[start + i]);
+      const wcode = hourly.weathercode[start + i];
+      const icon = `${wcode}.png`;
+
+      hourlyContainer.innerHTML += `
           <div class="hour">
             <p>${hour}</p>
-            <img src="${icon}" alt="">
+            <img src="${icon}">
             <p>${temp}°</p>
           </div>
         `;
-      });
-    }
+    });
   }
 
-  // 3 Day Card
   if (days === 3) {
     const wind = daily.windspeed_10m_max[index].toFixed(1);
     const humidity = daily.relative_humidity_2m_max[index];
     card.innerHTML += `
-      <div class="section">
-        <p><strong>Wind:</strong> ${wind} mph</p>
-        <p><strong>Humidity:</strong> ${humidity}%</p>
-      </div>
-    `;
+        <div class="section">
+          <p><strong>Wind:</strong> ${wind} mph</p>
+          <p><strong>Humidity:</strong> ${humidity}%</p>
+        </div>
+      `;
   }
 
   return card;
 }
 
-// Render Forecast
+// ===== RENDER FORECAST =====
 function renderForecast(data, days) {
   const forecastEl = document.getElementById("forecast");
   forecastEl.innerHTML = "";
@@ -164,43 +190,43 @@ function renderForecast(data, days) {
 
   const daily = data.daily;
   const hourly = data.hourly;
-  const current = data.current_weather;
 
   if (days === 7) {
     forecastEl.classList.add("seven-day");
-    const topRow = document.createElement("div");
-    topRow.classList.add("row-top");
-    const bottomRow = document.createElement("div");
-    bottomRow.classList.add("row-bottom");
 
     for (let i = 0; i < 7; i++) {
-      const card = createDayCard(daily, hourly, current, i, days);
-      if (i < 3) topRow.appendChild(card);
-      else bottomRow.appendChild(card);
+      forecastEl.appendChild(createDayCard(daily, hourly, null, i, days));
     }
-    forecastEl.appendChild(topRow);
-    forecastEl.appendChild(bottomRow);
   } else {
     for (let i = 0; i < days; i++) {
-      const card = createDayCard(daily, hourly, current, i, days);
-      forecastEl.appendChild(card);
+      forecastEl.appendChild(createDayCard(daily, hourly, null, i, days));
     }
   }
 }
 
-// Show Forecast
+// ===== SHOW FORECAST =====
 async function showForecast(days) {
   const data = await getWeatherData(currentCity);
   if (data) renderForecast(data, days);
 }
 
-// Dropdown Menu
+// ===== DROPDOWN SUGGESTIONS =====
 const input = document.getElementById("locationInput");
-const suggestionsEl = document.getElementById("suggestions");
+const suggestions = document.getElementById("suggestions");
 
-async function fetchCitySuggestions(query) {
-  if (!query) return [];
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`;
+function parseInput(str) {
+  const parts = str.split(",").map((s) => s.trim());
+  return {
+    name: parts[0] || "",
+    state: parts[1] || ""
+  };
+}
+
+async function fetchSuggestions(query) {
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+    query
+  )}&count=10&language=en&format=json`;
+
   const res = await fetch(url);
   const data = await res.json();
   return data.results || [];
@@ -209,66 +235,78 @@ async function fetchCitySuggestions(query) {
 input.addEventListener("input", async () => {
   const query = input.value.trim();
   if (!query) {
-    suggestionsEl.style.display = "none";
+    suggestions.style.display = "none";
     return;
   }
 
-  const cities = await fetchCitySuggestions(query);
-  if (!cities.length) {
-    suggestionsEl.style.display = "none";
-    return;
-  }
+  const parsed = parseInput(query);
+  const results = await fetchSuggestions(parsed.name);
 
-  suggestionsEl.innerHTML = "";
+  suggestions.innerHTML = "";
 
-  cities.forEach(city => {
-    const stateText = city.admin1 ? `, ${city.admin1}` : "";
+  let count = 0;
+
+  results.forEach((r) => {
+    if (count >= 5) return;
+
+    const state = r.admin1 ? `, ${r.admin1}` : "";
+    const text = `${r.name}${state}, ${r.country}`;
+
+    // Only show results matching typed state if provided
+    if (
+      parsed.state &&
+      r.admin1 &&
+      !r.admin1.toLowerCase().startsWith(parsed.state.toLowerCase())
+    ) {
+      return;
+    }
+
     const div = document.createElement("div");
-    div.textContent = `${city.name}${stateText}, ${city.country}`;
-
+    div.textContent = text;
     div.addEventListener("click", () => {
-      input.value = `${city.name}${stateText}, ${city.country}`;
-      
-      input.dataset.selectedCityName = city.name;
-      input.dataset.selectedState = city.admin1 || "";
-      input.dataset.selectedLat = city.latitude;
-      input.dataset.selectedLon = city.longitude;
-      suggestionsEl.style.display = "none";
+      input.value = text;
+      input.dataset.selectedName = r.name;
+      input.dataset.selectedState = r.admin1 || "";
+      input.dataset.selectedLat = r.latitude;
+      input.dataset.selectedLon = r.longitude;
+      suggestions.style.display = "none";
     });
 
-    suggestionsEl.appendChild(div);
+    suggestions.appendChild(div);
+    count++;
   });
 
-  suggestionsEl.style.display = "block";
+  suggestions.style.display = count > 0 ? "block" : "none";
 });
 
-// Search button
+// ===== SEARCH BUTTON =====
 async function searchCity() {
-  const inputValue = input.value.trim();
-  if (!inputValue) return;
+  const value = input.value.trim();
+  if (!value) return;
 
-  const name = input.dataset.selectedCityName || inputValue;
-  const state = input.dataset.selectedState || "";
-  const lat = input.dataset.selectedLat ? parseFloat(input.dataset.selectedLat) : null;
-  const lon = input.dataset.selectedLon ? parseFloat(input.dataset.selectedLon) : null;
+  const parsed = parseInput(value);
 
-  currentCity = { name, state, lat, lon };
+  currentCity = {
+    name: input.dataset.selectedName || parsed.name,
+    state: input.dataset.selectedState || parsed.state,
+    lat: input.dataset.selectedLat || null,
+    lon: input.dataset.selectedLon || null
+  };
+
   await showForecast(3);
 
   input.value = "";
-  input.dataset.selectedCityName = "";
+  input.dataset.selectedName = "";
   input.dataset.selectedState = "";
   input.dataset.selectedLat = "";
   input.dataset.selectedLon = "";
-  suggestionsEl.style.display = "none";
+  suggestions.style.display = "none";
 }
 
-// Day Toggles
-document.querySelectorAll(".day-toggles button").forEach(btn => {
-  btn.addEventListener("click", () => {
-    showForecast(parseInt(btn.textContent));
-  });
+// ===== DAY TOGGLES =====
+document.querySelectorAll(".day-toggles button").forEach((btn) => {
+  btn.addEventListener("click", () => showForecast(parseInt(btn.textContent)));
 });
 
-// Default load
+// ===== DEFAULT LOAD =====
 showForecast(3);
