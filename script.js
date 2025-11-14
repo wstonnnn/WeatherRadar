@@ -5,7 +5,7 @@ let currentCity = {
   lon: null
 };
 
-// ===== GET CITY COORDS =====
+// Get City Coordinates
 async function getCityCoords(cityObj) {
   if (cityObj.lat && cityObj.lon) {
     return {
@@ -47,7 +47,7 @@ async function getCityCoords(cityObj) {
   };
 }
 
-// ===== FETCH WEATHER =====
+// Fetch Weather
 async function getWeatherData(cityObj) {
   const coords = await getCityCoords(cityObj);
   if (!coords) {
@@ -61,7 +61,6 @@ async function getWeatherData(cityObj) {
   const data = await res.json();
   data.coords = coords;
 
-  // === ALWAYS SHOW CITY, STATE, COUNTRY ===
   let name = coords.name || "";
   let state = coords.state || coords.admin2 || "";
   let country = coords.country || "";
@@ -71,8 +70,7 @@ async function getWeatherData(cityObj) {
 
   return data;
 }
-
-// ===== WEATHER CODE DESCRIPTIONS =====
+// Weather Codes
 const weatherMap = {
   0: "Clear sky",
   1: "Mainly clear",
@@ -97,7 +95,7 @@ const weatherMap = {
   99: "Thunderstorm (heavy hail)"
 };
 
-// ===== TIME FORMAT =====
+// Format 12 Hour AM/PM
 function formatTimeTo12Hour(isoString) {
   const date = new Date(isoString);
   return date.toLocaleTimeString([], {
@@ -107,7 +105,7 @@ function formatTimeTo12Hour(isoString) {
   });
 }
 
-// ===== CREATE DAY CARD =====
+// Create Day Cards
 function createDayCard(daily, hourly, current, index, days) {
   const card = document.createElement("div");
   card.classList.add("day-card");
@@ -182,7 +180,7 @@ function createDayCard(daily, hourly, current, index, days) {
   return card;
 }
 
-// ===== RENDER FORECAST =====
+// Render/Show Forecast
 function renderForecast(data, days) {
   const forecastEl = document.getElementById("forecast");
   forecastEl.innerHTML = "";
@@ -204,13 +202,12 @@ function renderForecast(data, days) {
   }
 }
 
-// ===== SHOW FORECAST =====
 async function showForecast(days) {
   const data = await getWeatherData(currentCity);
   if (data) renderForecast(data, days);
 }
 
-// ===== DROPDOWN SUGGESTIONS =====
+// Dropdown Suggestions
 const input = document.getElementById("locationInput");
 const suggestions = document.getElementById("suggestions");
 
@@ -252,7 +249,6 @@ input.addEventListener("input", async () => {
     const state = r.admin1 ? `, ${r.admin1}` : "";
     const text = `${r.name}${state}, ${r.country}`;
 
-    // Only show results matching typed state if provided
     if (
       parsed.state &&
       r.admin1 &&
@@ -279,7 +275,7 @@ input.addEventListener("input", async () => {
   suggestions.style.display = count > 0 ? "block" : "none";
 });
 
-// ===== SEARCH BUTTON =====
+// Search Function
 async function searchCity() {
   const value = input.value.trim();
   if (!value) return;
@@ -303,10 +299,10 @@ async function searchCity() {
   suggestions.style.display = "none";
 }
 
-// ===== DAY TOGGLES =====
+// 1/3/7 Day Toggles
 document.querySelectorAll(".day-toggles button").forEach((btn) => {
   btn.addEventListener("click", () => showForecast(parseInt(btn.textContent)));
 });
 
-// ===== DEFAULT LOAD =====
+// Default Loadstate
 showForecast(3);
