@@ -51,7 +51,7 @@ async function getCityCoords(cityObj) {
 async function getWeatherData(cityObj) {
   const coords = await getCityCoords(cityObj);
   if (!coords) {
-    alert("City not found – try another.");
+    alert("City not found, please try again.");
     return null;
   }
 
