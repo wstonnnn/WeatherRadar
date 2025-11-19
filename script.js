@@ -70,6 +70,7 @@ async function getWeatherData(cityObj) {
 
   return data;
 }
+
 // Weather Codes
 const weatherMap = {
   0: "Clear sky",
@@ -180,7 +181,7 @@ function createDayCard(daily, hourly, current, index, days) {
   return card;
 }
 
-// Render/Show Forecast
+// Render Forecast
 function renderForecast(data, days) {
   const forecastEl = document.getElementById("forecast");
   forecastEl.innerHTML = "";
@@ -189,7 +190,7 @@ function renderForecast(data, days) {
   if (days === 1) forecastEl.classList.add("one-day");
   if (days === 3) forecastEl.classList.add("three-day");
   if (days === 7) forecastEl.classList.add("seven-day");
-  
+
   const daily = data.daily;
   const hourly = data.hourly;
 
@@ -200,13 +201,14 @@ function renderForecast(data, days) {
     const bottomRow = document.createElement("div");
     bottomRow.className = "row-bottom";
 
+    // 4 on top, 3 on bottom
     for (let i = 0; i < 7; i++) {
       const card = createDayCard(daily, hourly, null, i, days);
       if (i < 4) topRow.appendChild(card);
       else bottomRow.appendChild(card);
     }
 
-    forecastEl.appendChild(topRow)
+    forecastEl.appendChild(topRow);
     forecastEl.appendChild(bottomRow);
     return;
   }
@@ -318,5 +320,5 @@ document.querySelectorAll(".day-toggles button").forEach((btn) => {
   btn.addEventListener("click", () => showForecast(parseInt(btn.textContent)));
 });
 
-// Default Loadstate
+// Default Load
 showForecast(3);
