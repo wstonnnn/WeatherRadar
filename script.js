@@ -186,19 +186,33 @@ function renderForecast(data, days) {
   forecastEl.innerHTML = "";
   forecastEl.className = "forecast";
 
+  if (days === 1) forecastEl.classList.add("one-day");
+  if (days === 3) forecastEl.classList.add("three-day");
+  if (days === 7) forecastEl.classList.add("seven-day");
+  
   const daily = data.daily;
   const hourly = data.hourly;
 
   if (days === 7) {
-    forecastEl.classList.add("seven-day");
+    const topRow = document.createElement("div");
+    topRow.className = "row-top";
+
+    const bottomRow = document.createElement("div");
+    bottomRow.className = "row-bottom";
 
     for (let i = 0; i < 7; i++) {
-      forecastEl.appendChild(createDayCard(daily, hourly, null, i, days));
+      const card = createDayCard(daily, hourly, null, i, days);
+      if (i < 4) topRow.appendChild(card);
+      else bottomRow.appendChild(card);
     }
-  } else {
-    for (let i = 0; i < days; i++) {
-      forecastEl.appendChild(createDayCard(daily, hourly, null, i, days));
-    }
+
+    forecastEl.appendChild(topRow)
+    forecastEl.appendChild(bottomRow);
+    return;
+  }
+
+  for (let i = 0; i < days; i++) {
+    forecastEl.appendChild(createDayCard(daily, hourly, null, i, days));
   }
 }
 
